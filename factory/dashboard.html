@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software Factory</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f3; --panel: #ecece7; --card: #ffffff; --line: #dcdcd4;
+  --ink: #1d1d1a; --dim: #6b6b63;
+  --pass: #17693a; --pass-bg: #dcf0e2;
+  --changes: #8f4a00; --changes-bg: #fbe7cc;
+  --human: #b3261e; --human-bg: #fdecea;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614; --panel: #1f1f1c; --card: #2a2a26; --line: #3a3a35;
+    --ink: #ecece6; --dim: #a0a097;
+    --pass: #7ddb9b; --pass-bg: #1c3a27;
+    --changes: #f5bd75; --changes-bg: #45310f;
+    --human: #ff9a90; --human-bg: #4a1f1b;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 20px 24px 12px; }
+h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+#status { color: var(--dim); font-size: 12px; }
+#status.bad { color: var(--human); }
+main { padding: 0 24px 32px; }
+
+#help { background: var(--panel); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+#help code, .next code { font-family: var(--mono); font-size: 12px; }
+
+#needs { background: var(--human-bg); border: 1.5px solid var(--human); border-radius: 10px;
+  padding: 12px; margin-bottom: 16px; }
+#needs h2 { color: var(--human); }
+#needs-cards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+#needs .card { border-color: var(--human); }
+
+h2 { font-size: 12px; margin: 0 0 10px; font-weight: 650; }
+h2 small { font-weight: 400; color: var(--dim); font-size: 11px; margin-left: 4px; }
+#board { display: grid; gap: 10px; grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr; align-items: start; }
+.col { background: var(--panel); border-radius: 10px; padding: 12px; min-height: 180px; min-width: 0; }
+.cards { display: grid; gap: 8px; }
+
+.card { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.card:hover { border-color: var(--dim); }
+.card:focus-visible, dialog button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.id { font-family: var(--mono); font-size: 11px; color: var(--dim); overflow-wrap: anywhere; }
+.feature { margin: 2px 0 0; font-weight: 550; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rounds { margin-top: 8px; display: grid; gap: 4px; }
+.round { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.round b { font: 600 10px var(--mono); color: var(--dim); width: 20px; }
+.round.old { opacity: .6; }
+.chip { font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 9px; white-space: nowrap;
+  border: 1px solid var(--line); color: var(--dim); transition: background .3s, color .3s; }
+.chip.PASS { background: var(--pass-bg); color: var(--pass); border-color: transparent; }
+.chip.CHANGES { background: var(--changes-bg); color: var(--changes); border-color: transparent; }
+.live .chip.pending { animation: wait 1.6s ease-in-out infinite; }
+@keyframes wait { 50% { opacity: .45; } }
+.note { margin: 8px 0 0; color: var(--human); font-size: 12px; }
+.next { margin: 6px 0 0; color: var(--dim); font-size: 12px; overflow-wrap: anywhere; }
+.tag { display: inline-block; margin-top: 8px; font: 600 11px var(--mono); color: var(--pass); }
+
+dialog { border: 0; border-radius: 12px; padding: 0; background: var(--card); color: var(--ink);
+  width: min(960px, calc(100vw - 32px)); height: min(720px, calc(100vh - 32px)); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+.modal { display: grid; grid-template: auto minmax(0,1fr) / 220px minmax(0,1fr); height: 100%; }
+.modal header { grid-column: 1 / -1; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: center; }
+.modal header h2 { margin: 0; font: 600 13px var(--mono); overflow-wrap: anywhere; }
+#close { font: inherit; background: none; color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 10px; cursor: pointer; }
+nav { overflow-y: auto; border-right: 1px solid var(--line); padding: 8px; display: grid; gap: 2px; align-content: start; }
+nav button { display: flex; justify-content: space-between; gap: 8px; width: 100%; font: inherit; font-size: 13px;
+  color: inherit; background: none; border: 0; border-radius: 6px; padding: 6px 8px; cursor: pointer; text-align: left; }
+nav button:hover { background: var(--panel); }
+nav button[aria-current=true] { background: var(--panel); font-weight: 600; }
+nav .v { font-size: 11px; font-weight: 500; }
+.v.PASS, .v.APPROVE { color: var(--pass); }
+.v.CHANGES { color: var(--changes); }
+.v.ESCALATE { color: var(--human); }
+article { overflow-y: auto; padding: 16px 24px 32px; overflow-wrap: anywhere; }
+article h1, article h2, article h3 { font-size: 15px; margin: 18px 0 6px; font-weight: 650; }
+article h1 { font-size: 18px; }
+article code { font: 12.5px var(--mono); background: var(--panel); padding: 1px 4px; border-radius: 4px; }
+article pre { background: var(--panel); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
+article pre code { background: none; padding: 0; }
+article a { color: inherit; }
+article blockquote { margin: 8px 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--dim); }
+
+@media (max-width: 860px) {
+  header { padding: 16px 16px 10px; }
+  main { padding: 0 16px 24px; }
+  #board { grid-template-columns: minmax(0,1fr); }
+  .col { min-height: 0; }
+  .modal { grid-template: auto auto minmax(0,1fr) / minmax(0,1fr); }
+  .modal header { grid-column: 1; }
+  nav { border-right: 0; border-bottom: 1px solid var(--line); max-height: 150px; }
+  article { padding: 12px 16px 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .live .chip.pending { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Software Factory</h1>
+  <span id="status" role="status">Connecting</span>
+</header>
+<main>
+  <section id="help" hidden></section>
+  <section id="needs" hidden>
+    <h2>Needs you</h2>
+    <div id="needs-cards" class="cards"></div>
+  </section>
+  <div id="board"></div>
+</main>
+<dialog id="detail" aria-labelledby="detail-title">
+  <div class="modal">
+    <header><h2 id="detail-title"></h2><button id="close">Close</button></header>
+    <nav id="files" aria-label="Job files"></nav>
+    <article id="doc"></article>
+  </div>
+</dialog>
+
+<script>
+const COLUMNS = [
+  ['spec', 'Spec', 'opus'], ['build', 'Build', 'opus'], ['review', 'Review', '4 agents'],
+  ['approve', 'Approve', 'opus'], ['merged', 'Merged', 'dev → main'],
+];
+const REVIEWERS = ['security', 'ux', 'ui', 'code'];
+const MARK = { PASS: '✓', CHANGES: '↻', pending: '·' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const safeSeg = s => encodeURIComponent(String(s));
+
+$('board').innerHTML = COLUMNS.map(([key, name, sub]) =>
+  `<section class="col"><h2>${name}<small>${sub}</small></h2><div class="cards" id="col-${key}"></div></section>`).join('');
+
+const cards = new Map();   // job id -> element
+const seen = new Map();    // job id -> last rendered JSON
+let jobs = [];
+
+function chips(reviews) {
+  return REVIEWERS.map(r => {
+    const v = reviews?.[r] === 'PASS' || reviews?.[r] === 'CHANGES' ? reviews[r] : 'pending';
+    const label = v === 'pending' ? 'pending' : v;
+    return `<span class="chip ${v}" title="${r}: ${label}" aria-label="${r}: ${label}">${MARK[v]} ${r}</span>`;
+  }).join('');
+}
+
+function cardHTML(j) {
+  const past = (j.past_rounds || []).map((r, i) =>
+    `<div class="round old"><b>R${i + 1}</b>${chips(r)}</div>`).join('');
+  const live = j.stage === 'review' ? ' live' : '';
+  const now = j.round > 0 ? `<div class="round${live}"><b>R${j.round}</b>${chips(j.reviews)}</div>` : '';
+  const human = j.stage === 'needs-human';
+  return `<div class="id">${esc(j.id)}</div>
+    <p class="feature">${esc(j.feature || j.id)}</p>
+    ${past || now ? `<div class="rounds">${past}${now}</div>` : ''}
+    ${human && j.note ? `<p class="note">${esc(j.note)}</p>` : ''}
+    ${human ? `<p class="next"><code>/factory approve ${esc(j.id)}</code> or <code>/factory rework ${esc(j.id)} &lt;note&gt;</code></p>` : ''}
+    ${j.tag ? `<span class="tag">${esc(j.tag)}</span>` : ''}`;
+}
+
+function target(stage) {
+  if (stage === 'needs-human') return $('needs-cards');
+  return $('col-' + stage) || $('col-spec');
+}
+
+function render(list) {
+  const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const before = new Map([...cards].map(([id, el]) => [id, el.getBoundingClientRect()]));
+  const live = new Set(list.map(j => j.id));
+  for (const [id, el] of cards) if (!live.has(id)) { el.remove(); cards.delete(id); seen.delete(id); }
+
+  for (const j of list) {
+    let el = cards.get(j.id);
+    if (!el) {
+      el = document.createElement('button');
+      el.className = 'card';
+      el.addEventListener('click', () => openJob(j.id));
+      cards.set(j.id, el);
+    }
+    const json = JSON.stringify(j);
+    if (seen.get(j.id) !== json) { el.innerHTML = cardHTML(j); seen.set(j.id, json); }
+    const parent = target(j.stage);
+    if (el.parentElement !== parent) parent.appendChild(el);
+  }
+
+  $('needs').hidden = !list.some(j => j.stage === 'needs-human');
+  $('help').hidden = list.length > 0;
+  if (!list.length) $('help').innerHTML = 'No jobs yet. In Claude Code, run <code>/factory &lt;feature&gt;</code> and it will appear here.';
+
+  if (motion) for (const [id, el] of cards) {
+    const from = before.get(id);
+    if (!from) continue;
+    const to = el.getBoundingClientRect();
+    const dx = from.left - to.left, dy = from.top - to.top;
+    if (dx || dy) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }],
+      { duration: 380, easing: 'cubic-bezier(.2,.7,.2,1)' });
+  }
+}
+
+async function poll() {
+  try {
+    const res = await fetch('board.json', { cache: 'no-store' });
+    if (res.status === 404) { jobs = []; }
+    else if (!res.ok) throw new Error(res.status);
+    else {
+      const data = await res.json();
+      if (!Array.isArray(data.jobs)) throw new Error('bad board');
+      jobs = data.jobs;
+    }
+    render(jobs);
+    $('status').className = '';
+    $('status').textContent = 'Live · ' + new Date().toLocaleTimeString();
+    refreshOpen();
+  } catch (e) {
+    if (e instanceof SyntaxError) return;   // caught board.json mid-write; next poll will be fine
+    $('status').className = 'bad';
+    $('status').textContent = 'Cannot read board.json';
+    if (!jobs.length) {
+      $('help').hidden = false;
+      $('help').innerHTML = 'Serve this page from the factory folder: <code>cd factory &amp;&amp; python3 -m http.server</code>, then open <code>localhost:8000/dashboard.html</code>.';
+    }
+  }
+}
+
+/* ---- job files ---- */
+let openId = null, openJson = '', files = [], current = null;
+
+function candidates(j) {
+  const list = [['spec.md', 'Spec'], ['build.md', 'Build']];
+  for (let r = 1; r <= (j.round || 0); r++) {
+    for (const x of REVIEWERS) list.push([`round-${r}/review-${x}.md`, `R${r} ${x}`]);
+    list.push([`round-${r}/review-human.md`, `R${r} human`]);
+  }
+  list.push(['decision.md', 'Decision']);
+  return list;
+}
+
+async function loadFiles(j) {
+  const base = 'jobs/' + safeSeg(j.id) + '/';
+  const got = await Promise.all(candidates(j).map(async ([path, label]) => {
+    try {
+      const res = await fetch(base + path, { cache: 'no-store' });
+      return res.ok ? { path, label, text: await res.text() } : null;
+    } catch { return null; }
+  }));
+  if (openId !== j.id) return;
+  files = got.filter(Boolean);
+  if (!files.some(f => f.path === current)) current = files[0]?.path ?? null;
+  showFiles();
+}
+
+function verdict(text) {
+  const m = /^\s*(?:VERDICT:\s*)?(PASS|CHANGES|APPROVE|ESCALATE)\b/.exec(text);
+  return m ? m[1] : '';
+}
+
+function showFiles() {
+  $('files').innerHTML = files.map(f => {
+    const v = verdict(f.text);
+    return `<button data-path="${esc(f.path)}" aria-current="${f.path === current}">
+      <span>${esc(f.label)}</span>${v ? `<span class="v ${v}">${v}</span>` : ''}</button>`;
+  }).join('');
+  const f = files.find(f => f.path === current);
+  const html = f ? markdown(f.text) : '<p>No files for this job yet.</p>';
+  if ($('doc').dataset.html !== html) { $('doc').innerHTML = html; $('doc').dataset.html = html; }
+}
+
+$('files').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  current = b.dataset.path;
+  showFiles();
+  $('doc').scrollTop = 0;
+});
+
+function openJob(id) {
+  const j = jobs.find(j => j.id === id);
+  if (!j) return;
+  openId = id; openJson = JSON.stringify(j); current = null; files = [];
+  $('detail-title').textContent = id;
+  $('files').innerHTML = ''; $('doc').innerHTML = ''; delete $('doc').dataset.html;
+  $('detail').showModal();
+  loadFiles(j);
+}
+function refreshOpen() {
+  if (!openId) return;
+  const j = jobs.find(j => j.id === openId);
+  if (!j) return;
+  const json = JSON.stringify(j);
+  if (json !== openJson) { openJson = json; loadFiles(j); }
+}
+$('close').addEventListener('click', () => $('detail').close());
+$('detail').addEventListener('click', e => { if (e.target === $('detail')) $('detail').close(); });
+$('detail').addEventListener('close', () => { openId = null; });
+
+/* ---- small markdown renderer: everything is escaped before any tag is added ---- */
+function inline(s) {
+  return s.split(/(`[^`]+`)/).map(part => {
+    if (/^`[^`]+`$/.test(part)) return `<code>${esc(part.slice(1, -1))}</code>`;
+    return esc(part)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  }).join('');
+}
+function markdown(src) {
+  const lines = src.replace(/\r/g, '').split('\n');
+  const out = [];
+  let para = [], list = null;
+  const flushPara = () => { if (para.length) out.push(`<p>${inline(para.join(' '))}</p>`); para = []; };
+  const flushList = () => { if (list) out.push(`</${list}>`); list = null; };
+  const flush = () => { flushPara(); flushList(); };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let m;
+    if (/^\s*```/.test(line)) {
+      flush();
+      const code = [];
+      for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
+      out.push(`<pre><code>${esc(code.join('\n'))}</code></pre>`);
+    } else if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) {
+      flush();
+      const n = Math.min(m[1].length, 3);
+      out.push(`<h${n}>${inline(m[2])}</h${n}>`);
+    } else if ((m = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(line))) {
+      flushPara();
+      const kind = /\d/.test(m[1]) ? 'ol' : 'ul';
+      if (list !== kind) { flushList(); out.push(`<${kind}>`); list = kind; }
+      out.push(`<li>${inline(m[2])}</li>`);
+    } else if ((m = /^>\s?(.*)$/.exec(line))) {
+      flush();
+      out.push(`<blockquote>${inline(m[1])}</blockquote>`);
+    } else if (/^\s*(---+|\*\*\*+)\s*$/.test(line)) {
+      flush();
+      out.push('<hr>');
+    } else if (!line.trim()) {
+      flush();
+    } else {
+      flushList();
+      para.push(line.trim());
+    }
+  }
+  flush();
+  return out.join('\n');
+}
+
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>
