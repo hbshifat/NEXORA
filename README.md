@@ -14,6 +14,7 @@ feature ─► spec-writer ─► builder ─► 4 reviews ─► approver ─�
 
 ## Contents
 
+- [Install into your project](#install-into-your-project)
 - [Quick start](#quick-start)
 - [Commands](#commands)
 - [How a job flows](#how-a-job-flows)
@@ -24,7 +25,54 @@ feature ─► spec-writer ─► builder ─► 4 reviews ─► approver ─�
 - [Customizing the factory](#customizing-the-factory)
 - [Troubleshooting](#troubleshooting)
 
+## Install into your project
+
+From the root of any git repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hbshifat/NEXORA/main/get.sh | bash
+```
+
+This installs the latest [release](https://github.com/hbshifat/NEXORA/releases)
+(or `main` when there is none yet). It adds:
+
+| Path | On a later run |
+|---|---|
+| `.claude/skills/factory/SKILL.md` and the seven `.claude/agents/*.md` | replaced with the new version |
+| `factory/dashboard.html` | replaced with the new version |
+| `factory/backlog.md` | created only if missing; your backlog is never touched |
+| `factory/.install.json` | records the installed version |
+| three run-state lines in `.gitignore` | added only if missing |
+
+Then commit those files (`/factory` will not run with uncommitted changes) and run
+`/factory <feature>` in Claude Code. The repository needs a `main` branch; the
+factory creates `dev` from it on first run.
+
+**Options** — pass them after `bash -s --`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hbshifat/NEXORA/main/get.sh | bash -s -- --ref v0.2.0 --dry-run
+```
+
+| Option | Effect |
+|---|---|
+| `--ref <tag\|branch>` | install a specific version |
+| `--target <dir>` | install into another folder instead of the current one |
+| `--dry-run` | show what would change and write nothing |
+| `--force` | overwrite files at the factory's paths that the factory did not install |
+
+**Safe by default.** On a first install, if you already have a file at one of the
+factory's paths (for example your own `.claude/agents/builder.md`), the installer
+stops, names the file, and changes nothing. Rerunning the installer later is an
+upgrade and only replaces the factory's own files.
+
+**Without curl.** Clone this repository and run `./install.sh /path/to/your/project`
+— same options, minus `--ref` and `--target`.
+
 ## Quick start
+
+These steps run the factory inside this repository itself, which is how the
+factory is developed. To use it in your own project, [install it](#install-into-your-project) first.
 
 **Requirements**
 
@@ -169,8 +217,15 @@ Open <http://localhost:8000/dashboard.html>.
 │       ├── round-N/review-{security,ux,ui,code,human}.md
 │       └── decision.md
 ├── .worktrees/<id>/         # one git worktree per in-flight job (gitignored)
+├── get.sh                   # one-line installer: downloads a release, runs install.sh
+├── install.sh               # copies the factory into a target repository
+├── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
 └── quick-notes/             # app built by the factory (job 001, v0.1.0)
 ```
+
+When you add a file the factory needs at runtime, add it to `MANAGED_FILES` (or
+`SEED_FILES`) in [`install.sh`](install.sh) and to `MANAGED` in the test, then run
+`bash tests/test-install.sh`.
 
 `board.json`, `jobs/`, and `.worktrees/` are deliberately gitignored: run state
 lives on disk so it survives branch switches and rollbacks. The approver's
@@ -206,6 +261,18 @@ git revert -m 1 <tag>
 
 If a merge conflicts or any landing step fails, the factory aborts the merge,
 returns to `dev`, and parks the job in `needs-human` with the error.
+
+### Publishing an installable release
+
+`get.sh` installs the latest **GitHub Release**, not the latest tag. After a
+release lands on `main`, publish it so users get it:
+
+```bash
+gh release create v0.2.0 --verify-tag --generate-notes
+```
+
+Only releases that include `install.sh` can be installed this way; `v0.1.0`
+predates the installer.
 
 ## Customizing the factory
 
