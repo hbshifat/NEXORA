@@ -1,0 +1,114 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f3; --panel: #ecece7; --card: #ffffff; --line: #dcdcd4;
+  --ink: #1d1d1a; --dim: #5f5f58;
+  --human: #b3261e; --human-bg: #fdecea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614; --panel: #1f1f1c; --card: #2a2a26; --line: #3a3a35;
+    --ink: #ecece6; --dim: #a8a89f;
+    --human: #ff9a90; --human-bg: #4a1f1b;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+main { max-width: 640px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 24px; margin: 0 0 16px; font-weight: 650; letter-spacing: -.01em; }
+p { margin: 0; }
+label { display: block; font-weight: 600; margin-bottom: 4px; }
+
+input[type="text"] {
+  display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 44px; padding: 10px;
+  font: inherit; font-size: 16px; color: var(--ink); background: var(--card);
+  border: 1px solid var(--dim); border-radius: 8px;
+}
+[aria-invalid="true"] { border: 2px solid var(--human) !important; }
+
+button {
+  min-width: 44px; min-height: 44px; padding: 8px 14px;
+  font: inherit; font-weight: 600; color: var(--ink); background: var(--card);
+  border: 1px solid var(--dim); border-radius: 8px; cursor: pointer;
+}
+button:hover { background: var(--panel); }
+button.primary { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+button.primary:hover { background: var(--dim); border-color: var(--dim); }
+button.danger { color: var(--human); }
+button:disabled, input:disabled { opacity: .55; cursor: not-allowed; }
+button:disabled:hover { background: var(--card); }
+button.primary:disabled:hover { background: var(--ink); border-color: var(--ink); }
+
+button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--ink); outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button { transition: background-color .15s ease, color .15s ease; }
+}
+
+.add-form { display: grid; gap: 8px; }
+.add-form label { margin-bottom: 0; }
+.add-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.add-row input { flex: 1 1 12rem; width: auto; }
+.add-row button { flex: 0 0 auto; }
+
+.toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px; margin-top: 20px;
+}
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter[aria-pressed="true"] {
+  color: var(--bg); background: var(--ink); border-color: var(--ink);
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px;
+}
+.filter[aria-pressed="true"]:hover { background: var(--ink); }
+.counts { color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.list-area { margin-top: 16px; }
+
+.field-error, .warning {
+  color: var(--human); background: var(--human-bg);
+  border: 1px solid var(--human); border-radius: 8px; padding: 8px 10px;
+  font-weight: 600;
+}
+.warning { margin-bottom: 16px; }
+
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.task {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  min-width: 0; background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px;
+}
+.task-label {
+  display: flex; align-items: center; gap: 12px;
+  flex: 1 1 12rem; min-width: 0; min-height: 44px; margin: 0;
+  font-weight: 400; cursor: pointer;
+}
+.task-toggle {
+  flex: none; width: 22px; height: 22px; margin: 0;
+  accent-color: var(--ink); cursor: pointer;
+}
+.task-toggle:disabled { cursor: not-allowed; }
+.task-title { min-width: 0; overflow-wrap: anywhere; }
+.task.completed .task-title {
+  color: var(--dim); text-decoration: line-through; text-decoration-thickness: 2px;
+}
+.task-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.task.editing { display: block; padding: 12px; }
+.edit-form { display: grid; gap: 8px; }
+.edit-form label { margin-bottom: 0; }
+
+.message { color: var(--dim); padding: 12px 0; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
