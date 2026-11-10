@@ -220,7 +220,8 @@ Open <http://localhost:8000/dashboard.html>.
 ├── get.sh                   # one-line installer: downloads a release, runs install.sh
 ├── install.sh               # copies the factory into a target repository
 ├── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
-└── quick-notes/             # app built by the factory (job 001, v0.1.0)
+├── quick-notes/             # app built by the factory (job 001, v0.1.0)
+└── todo-list/               # app built by the factory (job 003)
 ```
 
 When you add a file the factory needs at runtime, add it to `MANAGED_FILES` (or
