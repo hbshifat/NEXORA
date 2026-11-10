@@ -86,8 +86,9 @@ Rewrite `factory/board.json` at every change below. The dashboard polls it.
 ## Preflight (every command)
 
 1. If `dev` does not exist, create it from `main`.
-2. If `git status --porcelain` is not empty, stop and tell the user to commit or
-   stash first. Otherwise `git switch dev`.
+2. If `git status --porcelain` shows any change other than `factory/backlog.md`,
+   stop and tell the user to commit or stash first. Otherwise `git switch dev`.
+   Backlog edits may stay uncommitted; **Land** commits them.
 3. If `factory/board.json` is missing, create it as `{ "jobs": [] }`.
 
 ## Commands
@@ -157,8 +158,10 @@ branch, and worktree path. Read the first line of `decision.md`:
 Every feature reaches `dev` first. Every merge into `main` gets a tag, so any
 release can be undone with `git revert -m 1 <tag>`.
 
-1. If `from_backlog`, tick the item in `.worktrees/<id>/factory/backlog.md` and
-   commit that on the feature branch.
+1. If `from_backlog`, copy `factory/backlog.md` from the main checkout over
+   `.worktrees/<id>/factory/backlog.md`, tick the item there, and commit it on the
+   feature branch. Then run `git restore factory/backlog.md` in the main checkout.
+   The merge brings the edits back, so the merge never meets local changes.
 2. Feature into `dev`, while on `dev`:
    - With an `origin` remote and `gh` available: `git push -u origin factory/<id>`,
      `gh pr create --base dev --head factory/<id> --title "<id>" --body-file factory/jobs/<id>/decision.md`,
