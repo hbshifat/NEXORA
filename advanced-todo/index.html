@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advanced Todo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Advanced Todo</h1>
+
+    <p id="storage-warning" class="warning" role="alert" hidden></p>
+
+    <form id="add-form" class="add-form" novalidate>
+      <div class="field">
+        <label for="add-title">New task</label>
+        <input id="add-title" type="text" autocomplete="off" maxlength="200">
+      </div>
+      <div class="add-row">
+        <div class="field">
+          <label for="add-priority">Priority</label>
+          <select id="add-priority">
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="add-due">Due date (optional)</label>
+          <input id="add-due" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="add-notes">Notes (optional)</label>
+        <textarea id="add-notes" rows="2" maxlength="1000"></textarea>
+      </div>
+      <p id="add-error" class="field-error" role="alert" hidden></p>
+      <div>
+        <button id="add-submit" class="primary" type="submit">Add task</button>
+      </div>
+    </form>
+
+    <section class="controls" aria-label="View options">
+      <div class="controls-row">
+        <div class="field grow">
+          <label for="search">Search tasks</label>
+          <input id="search" type="search" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="sort">Sort by</label>
+          <select id="sort">
+            <option value="created" selected>Newest first</option>
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
+          </select>
+        </div>
+      </div>
+      <div id="filters" class="filters" role="group" aria-label="Filter tasks">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="filter" data-filter="active" aria-pressed="false">Active</button>
+        <button type="button" class="filter" data-filter="completed" aria-pressed="false">Completed</button>
+      </div>
+      <div class="bulk">
+        <button id="toggle-all" type="button" disabled>Mark all complete</button>
+        <button id="clear-completed" class="danger" type="button" disabled>Clear completed</button>
+      </div>
+      <p id="counts" class="counts">0 total, 0 active, 0 completed, 0 overdue</p>
+    </section>
+
+    <section id="list-area" class="list-area" aria-label="Tasks"></section>
+
+    <div id="status" class="visually-hidden" role="status" aria-atomic="true"></div>
+  </main>
+
+  <script src="todos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -219,7 +219,8 @@ Open <http://localhost:8000/dashboard.html>.
 ├── .worktrees/<id>/         # one git worktree per in-flight job (gitignored)
 ├── get.sh                   # one-line installer: downloads a release, runs install.sh
 ├── install.sh               # copies the factory into a target repository
-└── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
+├── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
+└── advanced-todo/           # app built by the factory (job 001)
 ```
 
 When you add a file the factory needs at runtime, add it to `MANAGED_FILES` (or
