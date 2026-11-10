@@ -88,7 +88,7 @@ factory is developed. To use it in your own project, [install it](#install-into-
 2. Start a job:
 
    ```
-   /factory Add a dark mode toggle to Quick Notes that remembers the user's choice
+   /factory Add a dark mode toggle that remembers the user's choice
    ```
 
 3. Watch it on the dashboard (in a second terminal):
@@ -219,9 +219,7 @@ Open <http://localhost:8000/dashboard.html>.
 ├── .worktrees/<id>/         # one git worktree per in-flight job (gitignored)
 ├── get.sh                   # one-line installer: downloads a release, runs install.sh
 ├── install.sh               # copies the factory into a target repository
-├── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
-├── quick-notes/             # app built by the factory (job 001, v0.1.0)
-└── todo-list/               # app built by the factory (job 003)
+└── tests/test-install.sh    # installer tests (bash tests/test-install.sh)
 ```
 
 When you add a file the factory needs at runtime, add it to `MANAGED_FILES` (or
@@ -231,17 +229,6 @@ When you add a file the factory needs at runtime, add it to `MANAGED_FILES` (or
 `board.json`, `jobs/`, and `.worktrees/` are deliberately gitignored: run state
 lives on disk so it survives branch switches and rollbacks. The approver's
 `decision.md` becomes the pull request body, so the reasoning still reaches GitHub.
-
-### Example output: Quick Notes
-
-[`quick-notes/`](quick-notes/) is the factory's first shipped job — a
-dependency-free notes app (add, edit, delete, search, localStorage, keyboard and
-phone friendly). It passed all four reviews in round 1. Run its tests from the
-repo root:
-
-```bash
-node --test "quick-notes/test/*.test.js"
-```
 
 ## Branching and releases
 
