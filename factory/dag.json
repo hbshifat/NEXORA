@@ -1,0 +1,32 @@
+{
+  "tasks": [
+    {
+      "id": "T1_java_backend_core",
+      "name": "Java 25 Gradle ledger domain and core double-entry accounting tests",
+      "dependencies": [],
+      "worktree_branch": "task/t1-java-backend-core",
+      "verify_command": "cd backend && gradle test --tests '*LedgerServiceTest*'"
+    },
+    {
+      "id": "T2_java_tax_engine",
+      "name": "Java sales tax and EU VAT rule calculator",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t2-java-tax-engine",
+      "verify_command": "cd backend && gradle test --tests '*TaxServiceTest*'"
+    },
+    {
+      "id": "T3_java_fraud_engine",
+      "name": "Java risk scoring and transaction velocity audit service",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t3-java-fraud-engine",
+      "verify_command": "cd backend && gradle test --tests '*FraudServiceTest*'"
+    },
+    {
+      "id": "T4_react_frontend_ui",
+      "name": "React billing dashboard with ledger balances and transaction table",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t4-react-frontend-ui",
+      "verify_command": "test -f frontend/src/App.jsx && test -f frontend/package.json && node --test frontend/test/*.test.js"
+    }
+  ]
+}
