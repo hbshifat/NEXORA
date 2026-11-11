@@ -9,7 +9,7 @@ import (
 
 // defaultBaseBranch is used when CreateWorktree is called without an
 // explicit base branch.
-const defaultBaseBranch = "dev"
+const defaultBaseBranch = "HEAD"
 
 // WorktreeManager wraps git worktree/commit operations for a single
 // repository, rooted at RepoRoot.
