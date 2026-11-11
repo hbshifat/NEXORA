@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
+	"nexora/engine/pkg/board"
 	"nexora/engine/pkg/dag"
 	"nexora/engine/pkg/git"
 )
@@ -45,6 +47,7 @@ func LoadDAG(path string) (*dag.DAG, error) {
 // repository's worktrees.
 type Engine struct {
 	StatePath string
+	BoardPath string // if set, factory/dashboard.html's board.json is kept in sync on every status change
 	RepoRoot  string
 	WT        *git.WorktreeManager
 
@@ -74,40 +77,102 @@ func (e *Engine) DAG() *dag.DAG {
 }
 
 // persistState atomically writes the current status of every task to
-// StatePath. Callers must hold e.mu.
+// StatePath, and — whenever BoardPath is set — refreshes factory/board.json
+// so factory/dashboard.html reflects the same transition. Callers must hold
+// e.mu.
 func (e *Engine) persistState() error {
-	if e.StatePath == "" {
-		return nil
-	}
-	state := make(map[string]dag.TaskStatus, len(e.dag.Tasks))
-	for id, t := range e.dag.Tasks {
-		state[id] = t.Status
-	}
-	raw, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal state: %w", err)
+	if e.StatePath != "" {
+		state := make(map[string]dag.TaskStatus, len(e.dag.Tasks))
+		for id, t := range e.dag.Tasks {
+			state[id] = t.Status
+		}
+		raw, err := json.MarshalIndent(state, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal state: %w", err)
+		}
+
+		dir := filepath.Dir(e.StatePath)
+		tmp, err := os.CreateTemp(dir, ".state-*.json.tmp")
+		if err != nil {
+			return fmt.Errorf("create temp state file: %w", err)
+		}
+		tmpPath := tmp.Name()
+		if _, err := tmp.Write(raw); err != nil {
+			tmp.Close()
+			os.Remove(tmpPath)
+			return fmt.Errorf("write temp state file: %w", err)
+		}
+		if err := tmp.Close(); err != nil {
+			os.Remove(tmpPath)
+			return fmt.Errorf("close temp state file: %w", err)
+		}
+		if err := os.Rename(tmpPath, e.StatePath); err != nil {
+			os.Remove(tmpPath)
+			return fmt.Errorf("rename temp state file: %w", err)
+		}
 	}
 
-	dir := filepath.Dir(e.StatePath)
-	tmp, err := os.CreateTemp(dir, ".state-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp state file: %w", err)
+	if e.BoardPath != "" {
+		if err := e.writeBoard(); err != nil {
+			return fmt.Errorf("write board: %w", err)
+		}
 	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(raw); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return fmt.Errorf("write temp state file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("close temp state file: %w", err)
-	}
-	if err := os.Rename(tmpPath, e.StatePath); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("rename temp state file: %w", err)
-	}
+
 	return nil
+}
+
+// writeBoard renders the current DAG state as dashboard.html's board.json.
+// Callers must hold e.mu.
+func (e *Engine) writeBoard() error {
+	ids := make([]string, 0, len(e.dag.Tasks))
+	for id := range e.dag.Tasks {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids) // deterministic card order
+
+	jobs := make([]board.Job, 0, len(ids))
+	for _, id := range ids {
+		t := e.dag.Tasks[id]
+		jobs = append(jobs, board.Job{
+			ID:      t.ID,
+			Feature: t.Name,
+			Stage:   stageFor(t.Status),
+			Round:   1,
+			Reviews: reviewsFor(t.Status),
+		})
+	}
+	return board.Write(e.BoardPath, jobs)
+}
+
+// stageFor maps a TaskStatus onto one of dashboard.html's board columns.
+// PENDING and READY (not yet running) both land in "spec", the leftmost
+// column, since Phase 1 has no separate spec stage of its own.
+func stageFor(status dag.TaskStatus) string {
+	switch status {
+	case dag.StatusRunning:
+		return "build"
+	case dag.StatusCompleted:
+		return "merged"
+	case dag.StatusFailed:
+		return "needs-human"
+	default:
+		return "spec"
+	}
+}
+
+// reviewsFor reports the review-chip state dashboard.html renders for a
+// task. Phase 1 has no real review stage, so the task's own verify command
+// stands in for a single "code" reviewer: PASS once it has succeeded,
+// CHANGES once it has failed, and no chip (pending) before that.
+func reviewsFor(status dag.TaskStatus) map[string]string {
+	switch status {
+	case dag.StatusCompleted:
+		return map[string]string{"code": "PASS"}
+	case dag.StatusFailed:
+		return map[string]string{"code": "CHANGES"}
+	default:
+		return nil
+	}
 }
 
 // taskResult is sent back on the results channel when a task's execution

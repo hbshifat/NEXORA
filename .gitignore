@@ -1,5 +1,6 @@
 # Factory run state: lives on disk, survives branch switches and rollbacks.
 factory/board.json
+factory/state.json
 factory/jobs/
 
 # One git worktree per in-flight job.
