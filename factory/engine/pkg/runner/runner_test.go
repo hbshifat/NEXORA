@@ -184,3 +184,103 @@ func TestEngine_FailurePropagatesToDependents(t *testing.T) {
 		t.Errorf("T2 status = %s, want %s (cascaded failure)", got, dag.StatusFailed)
 	}
 }
+
+// TestEngine_TaskWithNoChanges_Succeeds proves that a task whose verify
+// command makes no file changes (a read-only check) completes successfully
+// instead of failing on git's "nothing to commit" exit code.
+func TestEngine_TaskWithNoChanges_Succeeds(t *testing.T) {
+	repoRoot := setupRepo(t)
+
+	tasks := []*dag.TaskNode{
+		{
+			ID:             "T1",
+			Name:           "read-only check",
+			Dependencies:   nil,
+			WorktreeBranch: "task/t1-noop",
+			VerifyCommand:  `true`,
+		},
+	}
+
+	dagPath := filepath.Join(repoRoot, "dag.json")
+	writeDAGFile(t, dagPath, tasks)
+	statePath := filepath.Join(repoRoot, "state.json")
+
+	engine, err := NewEngine(dagPath, statePath, repoRoot)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+	if err := engine.Run(); err != nil {
+		t.Fatalf("engine.Run: %v", err)
+	}
+
+	if got := engine.DAG().Tasks["T1"].Status; got != dag.StatusCompleted {
+		t.Errorf("T1 status = %s, want %s", got, dag.StatusCompleted)
+	}
+
+	path := engine.WT.WorktreePath("T1")
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("worktree for T1 still exists at %s (err=%v)", path, err)
+	}
+}
+
+// TestDAG_MultiDependency_ReturnsValidationError proves that a DAG with a
+// fan-in task (more than one dependency) is rejected up front, rather than
+// silently dropping every dependency but the first during execution.
+func TestDAG_MultiDependency_ReturnsValidationError(t *testing.T) {
+	d := dag.NewDAG()
+	for _, task := range []*dag.TaskNode{
+		{ID: "T1", Dependencies: nil, WorktreeBranch: "task/t1", VerifyCommand: "true"},
+		{ID: "T2", Dependencies: nil, WorktreeBranch: "task/t2", VerifyCommand: "true"},
+		{ID: "T3", Dependencies: []string{"T1", "T2"}, WorktreeBranch: "task/t3", VerifyCommand: "true"},
+	} {
+		if err := d.AddTask(task); err != nil {
+			t.Fatalf("AddTask(%s): %v", task.ID, err)
+		}
+	}
+
+	err := d.Validate()
+	if err == nil {
+		t.Fatal("Validate() = nil, want an error for multi-dependency fan-in")
+	}
+	want := `task "T3" has multiple dependencies ([T1 T2]); multi-parent fan-in merge station is not yet implemented in Phase 1`
+	if err.Error() != want {
+		t.Errorf("Validate() error = %q, want %q", err.Error(), want)
+	}
+}
+
+// TestEngine_WorktreeCleanedUpOnFailure proves that a failed task's worktree
+// is torn down rather than left behind in .worktrees/.
+func TestEngine_WorktreeCleanedUpOnFailure(t *testing.T) {
+	repoRoot := setupRepo(t)
+
+	tasks := []*dag.TaskNode{
+		{
+			ID:             "T1",
+			Name:           "fails after writing a file",
+			Dependencies:   nil,
+			WorktreeBranch: "task/t1-dirty-fail",
+			VerifyCommand:  `printf 'partial' > leftover.txt && exit 1`,
+		},
+	}
+
+	dagPath := filepath.Join(repoRoot, "dag.json")
+	writeDAGFile(t, dagPath, tasks)
+	statePath := filepath.Join(repoRoot, "state.json")
+
+	engine, err := NewEngine(dagPath, statePath, repoRoot)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+	if err := engine.Run(); err != nil {
+		t.Fatalf("engine.Run: %v", err)
+	}
+
+	if got := engine.DAG().Tasks["T1"].Status; got != dag.StatusFailed {
+		t.Fatalf("T1 status = %s, want %s", got, dag.StatusFailed)
+	}
+
+	path := engine.WT.WorktreePath("T1")
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("worktree for failed task T1 still exists at %s (err=%v)", path, err)
+	}
+}

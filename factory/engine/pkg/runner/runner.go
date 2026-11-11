@@ -221,28 +221,33 @@ func (e *Engine) cascadeFailure(failedID string) {
 }
 
 // execute runs a single task to completion: create its worktree (branched
-// off baseBranch), run its verify command inside it, and on success commit
-// and tear the worktree down. The result is sent on results.
+// off baseBranch), run its verify command inside it, and commit on success.
+// The worktree is always torn down afterwards — on success or failure alike
+// — so .worktrees/ never accumulates stale directories from failed runs.
+// The result is sent on results.
 func (e *Engine) execute(t *dag.TaskNode, baseBranch string, results chan<- taskResult) {
 	if err := e.WT.CreateWorktree(t.ID, t.WorktreeBranch, baseBranch); err != nil {
 		results <- taskResult{id: t.ID, err: fmt.Errorf("create worktree: %w", err)}
 		return
 	}
 
+	taskErr := e.verifyAndCommit(t)
+
+	if rmErr := e.WT.RemoveWorktree(t.ID); rmErr != nil && taskErr == nil {
+		taskErr = fmt.Errorf("remove worktree: %w", rmErr)
+	}
+
+	results <- taskResult{id: t.ID, err: taskErr}
+}
+
+// verifyAndCommit runs t's verify command and, on success, commits any
+// resulting changes. It does not touch the worktree's lifecycle.
+func (e *Engine) verifyAndCommit(t *dag.TaskNode) error {
 	if err := runVerifyCommand(e.WT.WorktreePath(t.ID), t.VerifyCommand); err != nil {
-		results <- taskResult{id: t.ID, err: fmt.Errorf("verify command: %w", err)}
-		return
+		return fmt.Errorf("verify command: %w", err)
 	}
-
 	if err := e.WT.Commit(t.ID, fmt.Sprintf("task %s: %s", t.ID, t.Name)); err != nil {
-		results <- taskResult{id: t.ID, err: fmt.Errorf("commit: %w", err)}
-		return
+		return fmt.Errorf("commit: %w", err)
 	}
-
-	if err := e.WT.RemoveWorktree(t.ID); err != nil {
-		results <- taskResult{id: t.ID, err: fmt.Errorf("remove worktree: %w", err)}
-		return
-	}
-
-	results <- taskResult{id: t.ID}
+	return nil
 }

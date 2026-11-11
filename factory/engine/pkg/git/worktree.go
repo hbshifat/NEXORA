@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // defaultBaseBranch is used when CreateWorktree is called without an
@@ -28,13 +29,18 @@ func (m *WorktreeManager) WorktreePath(taskID string) string {
 }
 
 func (m *WorktreeManager) runGitIn(dir string, args ...string) error {
+	_, err := m.runGitOutputIn(dir, args...)
+	return err
+}
+
+func (m *WorktreeManager) runGitOutputIn(dir string, args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("git %v (in %s): %w: %s", args, dir, err, out)
+		return string(out), fmt.Errorf("git %v (in %s): %w: %s", args, dir, err, out)
 	}
-	return nil
+	return string(out), nil
 }
 
 func (m *WorktreeManager) runGit(args ...string) error {
@@ -42,15 +48,19 @@ func (m *WorktreeManager) runGit(args ...string) error {
 }
 
 // CreateWorktree creates a new worktree for taskID at .worktrees/<taskID>,
-// checking out a new branch targetBranch. If baseBranch is empty, the
-// worktree branches off the current "dev" branch; otherwise it branches off
-// baseBranch (used to inherit a dependency's committed changes).
+// checking out targetBranch. If baseBranch is empty, the worktree branches
+// off the current "dev" branch; otherwise it branches off baseBranch (used
+// to inherit a dependency's committed changes).
+//
+// targetBranch is (re)created with "-B" rather than "-b": if a prior run or
+// retry already left targetBranch behind, it is reset to baseBranch instead
+// of failing with "a branch named '...' already exists".
 func (m *WorktreeManager) CreateWorktree(taskID, targetBranch, baseBranch string) error {
 	if baseBranch == "" {
 		baseBranch = defaultBaseBranch
 	}
 	path := m.WorktreePath(taskID)
-	return m.runGit("worktree", "add", path, "-b", targetBranch, baseBranch)
+	return m.runGit("worktree", "add", path, "-B", targetBranch, baseBranch)
 }
 
 // RemoveWorktree force-removes the worktree for taskID. The branch itself
@@ -61,11 +71,22 @@ func (m *WorktreeManager) RemoveWorktree(taskID string) error {
 }
 
 // Commit stages and commits all modified files inside the worktree for
-// taskID.
+// taskID. If the task left nothing to commit (e.g. a read-only
+// verification), this is a successful no-op instead of surfacing git's
+// "nothing to commit, working tree clean" exit code 1.
 func (m *WorktreeManager) Commit(taskID, message string) error {
 	path := m.WorktreePath(taskID)
 	if err := m.runGitIn(path, "add", "-A"); err != nil {
 		return err
 	}
+
+	status, err := m.runGitOutputIn(path, "status", "--porcelain")
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(status) == "" {
+		return nil
+	}
+
 	return m.runGitIn(path, "commit", "-m", message)
 }

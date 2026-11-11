@@ -51,14 +51,23 @@ func (d *DAG) AddTask(t *TaskNode) error {
 	return nil
 }
 
-// Validate checks that all dependencies reference known tasks and that the
-// graph contains no cycles.
+// Validate checks that all dependencies reference known tasks, that no task
+// has more than one dependency (multi-parent fan-in has no merge station
+// yet — see below), and that the graph contains no cycles.
 func (d *DAG) Validate() error {
 	for id, t := range d.Tasks {
 		for _, dep := range t.Dependencies {
 			if _, ok := d.Tasks[dep]; !ok {
 				return fmt.Errorf("task %q depends on unknown task %q", id, dep)
 			}
+		}
+		// baseBranchFor (in pkg/runner) only ever branches a task's worktree
+		// off its first dependency's branch. With more than one dependency,
+		// every other dependency's committed changes would be silently
+		// dropped, so refuse the DAG outright until a real merge step
+		// exists.
+		if len(t.Dependencies) > 1 {
+			return fmt.Errorf("task %q has multiple dependencies (%v); multi-parent fan-in merge station is not yet implemented in Phase 1", t.ID, t.Dependencies)
 		}
 	}
 	return d.detectCycles()
