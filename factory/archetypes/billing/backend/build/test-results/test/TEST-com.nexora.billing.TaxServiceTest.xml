@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.billing.TaxServiceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-11T10:37:05.382Z" hostname="HOSE2406101760A" time="0.008">
+  <properties/>
+  <testcase name="chargesNoSalesTaxInStatesWithoutIt()" classname="com.nexora.billing.TaxServiceTest" time="0.001"/>
+  <testcase name="rejectsAnUnknownStateCode()" classname="com.nexora.billing.TaxServiceTest" time="0.001"/>
+  <testcase name="rejectsANegativeNetAmountForReverseCharge()" classname="com.nexora.billing.TaxServiceTest" time="0.001"/>
+  <testcase name="rejectsANegativeTaxableAmount()" classname="com.nexora.billing.TaxServiceTest" time="0.001"/>
+  <testcase name="calculatesEuVatReverseCharge()" classname="com.nexora.billing.TaxServiceTest" time="0.0"/>
+  <testcase name="calculatesCaliforniaSalesTax()" classname="com.nexora.billing.TaxServiceTest" time="0.0"/>
+  <testcase name="calculatesNewYorkSalesTax()" classname="com.nexora.billing.TaxServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

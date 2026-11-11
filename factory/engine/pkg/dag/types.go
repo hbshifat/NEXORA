@@ -22,6 +22,7 @@ type TaskNode struct {
 	Name           string     `json:"name"`
 	Dependencies   []string   `json:"dependencies"`
 	WorktreeBranch string     `json:"worktree_branch"`
+	AgentCommand   string     `json:"agent_command,omitempty"`
 	VerifyCommand  string     `json:"verify_command"`
 	Status         TaskStatus `json:"status"`
 }

@@ -279,8 +279,52 @@ func TestEngine_WorktreeCleanedUpOnFailure(t *testing.T) {
 		t.Fatalf("T1 status = %s, want %s", got, dag.StatusFailed)
 	}
 
-	path := engine.WT.WorktreePath("T1")
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Errorf("worktree for failed task T1 still exists at %s (err=%v)", path, err)
+	if path := engine.WT.WorktreePath("T1"); !os.IsNotExist(err) {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Errorf("worktree for failed task T1 still exists at %s (err=%v)", path, err)
+		}
+	}
+}
+
+// TestEngine_AgentCommand_ExecutesAndInherits proves that a task's AgentCommand
+// writes code inside the worktree, which is verified by VerifyCommand and inherited
+// by downstream tasks.
+func TestEngine_AgentCommand_ExecutesAndInherits(t *testing.T) {
+	repoRoot := setupRepo(t)
+
+	tasks := []*dag.TaskNode{
+		{
+			ID:             "T1",
+			Name:           "agent builds module",
+			Dependencies:   nil,
+			WorktreeBranch: "task/t1-agent",
+			AgentCommand:   `mkdir -p src && printf 'package main\n' > src/module.txt`,
+			VerifyCommand:  `test -f src/module.txt`,
+		},
+		{
+			ID:             "T2",
+			Name:           "agent extends module",
+			Dependencies:   []string{"T1"},
+			WorktreeBranch: "task/t2-agent",
+			AgentCommand:   `printf 'func init() {}\n' >> src/module.txt`,
+			VerifyCommand:  `grep -q 'func init' src/module.txt`,
+		},
+	}
+
+	dagPath := filepath.Join(repoRoot, "dag.json")
+	writeDAGFile(t, dagPath, tasks)
+	statePath := filepath.Join(repoRoot, "state.json")
+
+	engine, err := NewEngine(dagPath, statePath, repoRoot)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+	if err := engine.Run(); err != nil {
+		t.Fatalf("engine.Run: %v", err)
+	}
+
+	d := engine.DAG()
+	if d.Tasks["T1"].Status != dag.StatusCompleted || d.Tasks["T2"].Status != dag.StatusCompleted {
+		t.Fatalf("tasks not completed: T1=%s, T2=%s", d.Tasks["T1"].Status, d.Tasks["T2"].Status)
 	}
 }

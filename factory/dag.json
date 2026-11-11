@@ -5,6 +5,7 @@
       "name": "Java 25 Gradle ledger domain and core double-entry accounting tests",
       "dependencies": [],
       "worktree_branch": "task/t1-java-backend-core",
+      "agent_command": "sh /home/gmhossen/Project/NEXORA/factory/agents/worker_t1.sh",
       "verify_command": "cd backend && gradle test --tests '*LedgerServiceTest*'"
     },
     {
@@ -12,6 +13,7 @@
       "name": "Java sales tax and EU VAT rule calculator",
       "dependencies": ["T1_java_backend_core"],
       "worktree_branch": "task/t2-java-tax-engine",
+      "agent_command": "sh /home/gmhossen/Project/NEXORA/factory/agents/worker_t2.sh",
       "verify_command": "cd backend && gradle test --tests '*TaxServiceTest*'"
     },
     {
@@ -19,6 +21,7 @@
       "name": "Java risk scoring and transaction velocity audit service",
       "dependencies": ["T1_java_backend_core"],
       "worktree_branch": "task/t3-java-fraud-engine",
+      "agent_command": "sh /home/gmhossen/Project/NEXORA/factory/agents/worker_t3.sh",
       "verify_command": "cd backend && gradle test --tests '*FraudServiceTest*'"
     },
     {
@@ -26,6 +29,7 @@
       "name": "React billing dashboard with ledger balances and transaction table",
       "dependencies": ["T1_java_backend_core"],
       "worktree_branch": "task/t4-react-frontend-ui",
+      "agent_command": "sh /home/gmhossen/Project/NEXORA/factory/agents/worker_t4.sh",
       "verify_command": "test -f frontend/src/App.jsx && test -f frontend/package.json && node --test frontend/test/*.test.js"
     }
   ]

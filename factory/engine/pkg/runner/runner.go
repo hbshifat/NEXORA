@@ -305,10 +305,19 @@ func (e *Engine) execute(t *dag.TaskNode, baseBranch string, results chan<- task
 	results <- taskResult{id: t.ID, err: taskErr}
 }
 
-// verifyAndCommit runs t's verify command and, on success, commits any
-// resulting changes. It does not touch the worktree's lifecycle.
+// verifyAndCommit runs t's agent command (if set), its verify command, and on
+// success commits any resulting changes. It does not touch the worktree's lifecycle.
 func (e *Engine) verifyAndCommit(t *dag.TaskNode) error {
-	if err := runVerifyCommand(e.WT.WorktreePath(t.ID), t.VerifyCommand); err != nil {
+	worktreePath := e.WT.WorktreePath(t.ID)
+
+	// If an agent command is defined, dispatch the worker inside the worktree
+	if t.AgentCommand != "" {
+		if err := runVerifyCommand(worktreePath, t.AgentCommand); err != nil {
+			return fmt.Errorf("agent worker command: %w", err)
+		}
+	}
+
+	if err := runVerifyCommand(worktreePath, t.VerifyCommand); err != nil {
 		return fmt.Errorf("verify command: %w", err)
 	}
 	if err := e.WT.Commit(t.ID, fmt.Sprintf("task %s: %s", t.ID, t.Name)); err != nil {
