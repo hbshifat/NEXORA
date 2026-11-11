@@ -1,128 +1,119 @@
-# BRD-002: Enterprise Billing & Transaction Audit Core
+# BRD-002: Enterprise Billing & Ledger Hub (Java 25 + React)
 
-**Document ID:** BRD-NEXORA-002  
+**Document ID:** BRD-NEXORA-002-JAVA-REACT  
 **Project:** NEXORA Software Factory  
-**Target Module:** `billing/`  
-**Status:** Approved for Orchestration  
-**Architecture Style:** Modular Monolith (Fintech Core)  
-**Execution Topology:** 1 Root Task + 3 Concurrent Parallel Worker Nodes (Fan-Out)  
+**Target Architecture:** Multi-Tier Enterprise Application (Java Backend + React Frontend)  
+**Execution Topology:** 1 Root Task + 3 Concurrent Parallel Workers (Fan-Out)  
 
 ---
 
 ## 1. Executive Summary & Objective
-Build an enterprise-grade, in-memory **Billing & Transaction Processing Core** inside the `billing/` directory. This module serves as a production-grade acceptance workload to test the **Parallel Concurrency and Fan-Out capabilities** of the NEXORA Deterministic Go DAG Orchestrator.
+Build an enterprise-grade **Billing & Transaction Management System** combining a robust **Java 25 (Gradle)** backend domain with a modern **React** frontend dashboard.
 
-The module implements a double-entry ledger domain, followed by three distinct, decoupled engines (Tax Calculation, Invoice Formatting, and Fraud Auditing) executing simultaneously across parallel isolated Git worktrees.
+This project serves as an industrial benchmark to prove that the **NEXORA Go Macro-Orchestrator** seamlessly coordinates polyglot stacks, running Java compiler tests (`./gradlew test`) and React test runners (`npm test`) concurrently across isolated Git worktrees.
 
 ---
 
-## 2. Technical Scope & Architecture Invariants
+## 2. Technology Matrix & Invariants
 
-- **Ecosystem:** Vanilla ECMAScript (ES2022+), Node.js native test runner (`node --test`), zero external NPM packages.
-- **Concurrency Invariant:** Tasks T2, T3, and T4 have zero cross-dependencies on each other. All three must execute **concurrently in parallel** as soon as Task T1 completes.
+| Layer | Technology | Build & Test Tool | Verification Command |
+| :--- | :--- | :--- | :--- |
+| **Backend Core** | Java 25 (Standard OOP / Clean Architecture) | Gradle 8.14 (Kotlin/Groovy DSL) | `./gradlew test` |
+| **Frontend UI** | React 18+ (Clean Component Architecture) | Node 22 / NPM | `npm test -- --watchAll=false` or `node --test` |
+
+- **Zero DB Infrastructure Required:** In-memory transactional models and thread-safe collections (`ConcurrentHashMap`, `CopyOnWriteArrayList`).
 - **Directory Layout:**
   ```text
-  billing/
-  ├── ledger.js              # Double-entry ledger core (Accounts, Debits, Credits)
-  ├── tax.js                 # Multi-region tax rules (US Sales Tax, EU VAT, Zero-rated)
-  ├── invoice.js             # Structured billing invoice & statement generator
-  ├── fraud.js               # Velocity rules, high-value alerts, risk scoring
-  └── test/
-      ├── ledger.test.js     # Tests for T1
-      ├── tax.test.js        # Tests for T2
-      ├── invoice.test.js    # Tests for T3
-      └── fraud.test.js      # Tests for T4
+  NEXORA/
+  ├── backend/
+  │   ├── build.gradle
+  │   ├── settings.gradle
+  │   └── src/
+  │       ├── main/java/com/nexora/billing/
+  │       │   ├── model/ (Account, Transaction, Entry, Currency)
+  │       │   ├── service/ (LedgerService, TaxService, FraudService)
+  │       └── test/java/com/nexora/billing/
+  │           ├── LedgerServiceTest.java
+  │           ├── TaxServiceTest.java
+  │           └── FraudServiceTest.java
+  └── frontend/
+      ├── package.json
+      ├── src/
+      │   ├── components/ (LedgerOverview, TransactionTable, TaxCalculator)
+      │   └── App.jsx
+      └── test/
+          └── App.test.js
   ```
 
 ---
 
-## 3. Functional Requirements
+## 3. The 4 DAG Tasks (1 Root + 3 Parallel Fan-Out)
 
-### 3.1 Task 1: Double-Entry Ledger Core (`billing/ledger.js`)
-- **Entities:**
-  - `Account`: `{ id, name, type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE', balance }`
-  - `Transaction`: `{ id, date, description, entries: [{ accountId, amount, type: 'DEBIT' | 'CREDIT' }] }`
-- **Invariants:**
-  - Double-Entry Rule: Total Debits must exactly equal Total Credits for every transaction.
-  - Accounts must update balances atomically.
-- **Test Gate:** `node --test billing/test/ledger.test.js`
+### 3.1 Root Task: `T1_java_backend_core`
+- **Focus:** Initialize the Gradle project and implement the core Double-Entry Bookkeeping domain.
+- **Domain Invariant:** Total Debits must exactly equal Total Credits.
+- **Verification Command:** `cd backend && ./gradlew test --tests "*LedgerServiceTest*"`
+- **Dependencies:** `[]` (Root task)
+- **Worktree Branch:** `task/t1-java-backend-core`
 
 ---
 
-### 3.2 Task 2: Multi-Region Tax Engine (`billing/tax.js`) [Parallel Worker A]
-- **Depends on:** `T1_billing_core`
-- **Capabilities:**
-  - Calculates line-item tax rates based on customer jurisdiction:
-    - `US`: State sales tax lookup (e.g. CA 7.25%, NY 4.00%).
-    - `EU`: Standard VAT rate (e.g. DE 19%, FR 20%) with B2B reverse-charge exemption.
-    - `EXEMPT`: Zero-rate (0%).
-  - Returns `{ subtotal, taxAmount, total, rateApplied, jurisdiction }`.
-- **Test Gate:** `node --test billing/test/tax.test.js`
+### 3.2 Parallel Task: `T2_java_tax_engine`
+- **Depends on:** `T1_java_backend_core`
+- **Focus:** Multi-region tax calculator (US State Sales Tax lookup + EU VAT reverse-charge calculation).
+- **Verification Command:** `cd backend && ./gradlew test --tests "*TaxServiceTest*"`
+- **Worktree Branch:** `task/t2-java-tax-engine`
 
 ---
 
-### 3.3 Task 3: Invoice Generation Engine (`billing/invoice.js`) [Parallel Worker B]
-- **Depends on:** `T1_billing_core`
-- **Capabilities:**
-  - Consumes ledger transactions and produces immutable, finalized invoice objects:
-    - `{ invoiceNumber, customerId, issueDate, dueDate, lineItems, subtotal, tax, total, status: 'ISSUED' }`.
-    - Human-readable text statement generation: `generateTextSummary(invoice)`.
-- **Test Gate:** `node --test billing/test/invoice.test.js`
+### 3.3 Parallel Task: `T3_java_fraud_engine`
+- **Depends on:** `T1_java_backend_core`
+- **Focus:** Transaction velocity checks (>3 transactions/min) and high-value threshold flags (> $10,000).
+- **Verification Command:** `cd backend && ./gradlew test --tests "*FraudServiceTest*"`
+- **Worktree Branch:** `task/t3-java-fraud-engine`
 
 ---
 
-### 3.4 Task 4: Fraud & Risk Scoring Engine (`billing/fraud.js`) [Parallel Worker C]
-- **Depends on:** `T1_billing_core`
-- **Capabilities:**
-  - Evaluates transactions against enterprise risk rules:
-    - **Velocity Check**: More than 3 transactions on the same account within 60 seconds triggers `WARNING`.
-    - **High-Value Threshold**: Transactions exceeding \$10,000 require `MANUAL_REVIEW`.
-    - **Risk Score**: Returns a score from 0 to 100 with flagged rule violations.
-- **Test Gate:** `node --test billing/test/fraud.test.js`
+### 3.4 Parallel Task: `T4_react_frontend_ui`
+- **Depends on:** `T1_java_backend_core`
+- **Focus:** React web dashboard displaying account balances, double-entry transaction tables, and live tax calculations.
+- **Verification Command:** `cd frontend && node --test test/*.test.js` (or `npm test -- --watchAll=false`)
+- **Worktree Branch:** `task/t4-react-frontend-ui`
 
 ---
 
-## 4. DAG Specification (Topological Fan-Out)
-
-```mermaid
-flowchart TD
-    T1["T1_billing_core\n(Root Task: Ledger & Accounts)"]
-    
-    T1 -->|Fan-Out Parallel| T2["T2_tax_engine\n(Tax Rules & Rates)"]
-    T1 -->|Fan-Out Parallel| T3["T3_invoice_engine\n(Invoice & Summary Gen)"]
-    T1 -->|Fan-Out Parallel| T4["T4_fraud_audit\n(Risk Rules & Velocity)"]
-```
+## 4. DAG JSON Specification
 
 ```json
 {
   "tasks": [
     {
-      "id": "T1_billing_core",
-      "name": "Fintech double-entry ledger domain and tests",
+      "id": "T1_java_backend_core",
+      "name": "Java 25 Gradle ledger domain and core double-entry accounting tests",
       "dependencies": [],
-      "worktree_branch": "task/t1-billing-core",
-      "verify_command": "node --test billing/test/ledger.test.js"
+      "worktree_branch": "task/t1-java-backend-core",
+      "verify_command": "cd backend && gradle test --tests '*LedgerServiceTest*'"
     },
     {
-      "id": "T2_tax_engine",
-      "name": "Multi-region sales tax and VAT calculation engine",
-      "dependencies": ["T1_billing_core"],
-      "worktree_branch": "task/t2-tax-engine",
-      "verify_command": "node --test billing/test/tax.test.js"
+      "id": "T2_java_tax_engine",
+      "name": "Java sales tax and EU VAT rule calculator",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t2-java-tax-engine",
+      "verify_command": "cd backend && gradle test --tests '*TaxServiceTest*'"
     },
     {
-      "id": "T3_invoice_engine",
-      "name": "Invoice and billing statement generation engine",
-      "dependencies": ["T1_billing_core"],
-      "worktree_branch": "task/t3-invoice-engine",
-      "verify_command": "node --test billing/test/invoice.test.js"
+      "id": "T3_java_fraud_engine",
+      "name": "Java risk scoring and transaction velocity audit service",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t3-java-fraud-engine",
+      "verify_command": "cd backend && gradle test --tests '*FraudServiceTest*'"
     },
     {
-      "id": "T4_fraud_audit",
-      "name": "Transaction fraud velocity and risk auditing rules",
-      "dependencies": ["T1_billing_core"],
-      "worktree_branch": "task/t4-fraud-audit",
-      "verify_command": "node --test billing/test/fraud.test.js"
+      "id": "T4_react_frontend_ui",
+      "name": "React billing dashboard with ledger balances and transaction table",
+      "dependencies": ["T1_java_backend_core"],
+      "worktree_branch": "task/t4-react-frontend-ui",
+      "verify_command": "test -f frontend/src/App.jsx && test -f frontend/package.json && node --test frontend/test/*.test.js"
     }
   ]
 }
