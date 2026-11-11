@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // defaultBaseBranch is used when CreateWorktree is called without an
@@ -15,6 +16,7 @@ const defaultBaseBranch = "HEAD"
 // repository, rooted at RepoRoot.
 type WorktreeManager struct {
 	RepoRoot string
+	mu       sync.Mutex
 }
 
 // NewWorktreeManager returns a WorktreeManager for the repository at
@@ -44,6 +46,8 @@ func (m *WorktreeManager) runGitOutputIn(dir string, args ...string) (string, er
 }
 
 func (m *WorktreeManager) runGit(args ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.runGitIn(m.RepoRoot, args...)
 }
 
