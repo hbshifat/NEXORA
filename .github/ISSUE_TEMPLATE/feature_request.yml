@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest a change to the factory, its agents, the installer or the dashboard
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the factory makes hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should the factory do instead? Mention which part (loop, an agent, installer, dashboard).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
