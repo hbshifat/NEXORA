@@ -137,10 +137,11 @@ Each job gets an id like `002-dark-mode`, a folder `factory/jobs/<id>/`, a branc
 
 1. **Spec** — `spec-writer` reads the feature and the repo and writes `spec.md`:
    repo facts (language, test command, conventions), goal, testable acceptance
-   criteria, out-of-scope items, and which surfaces (UI, auth, data) it touches.
-2. **Build** — `builder` implements the spec in the job's worktree, adds tests,
-   runs them, commits, and writes `build.md` with evidence for every acceptance
-   criterion.
+   criteria, the **test seams** (the public interfaces tests will check),
+   out-of-scope items, and which surfaces (UI, auth, data) it touches.
+2. **Build** — `builder` works test-first in the job's worktree: for each
+   acceptance criterion it writes a failing test at a test seam, then the code to
+   pass it. It commits and writes `build.md` with evidence for every criterion.
 3. **Review** — four reviewers run in parallel against `git diff dev...factory/<id>`
    and write into `round-N/`. The factory waits for **all four** before acting.
    - Any `VERDICT: CHANGES` → the same builder is resumed to fix them, then a new
@@ -174,10 +175,10 @@ Defined in [`.claude/agents/`](.claude/agents/).
 
 | Agent | Model | Job | Writes |
 |---|---|---|---|
-| [`spec-writer`](.claude/agents/spec-writer.md) | opus | Turns the feature into a testable spec | `spec.md` |
-| [`builder`](.claude/agents/builder.md) | opus | Implements, tests, commits; addresses review rounds | code + `build.md` |
+| [`spec-writer`](.claude/agents/spec-writer.md) | opus | Turns the feature into a testable spec with test seams | `spec.md` |
+| [`builder`](.claude/agents/builder.md) | opus | Builds test-first (red, then green) at the spec's seams; addresses review rounds | code + `build.md` |
 | [`review-security`](.claude/agents/review-security.md) | opus | Injection, auth, secrets, unsafe input, risky deps, data exposure | `round-N/review-security.md` |
-| [`review-code`](.claude/agents/review-code.md) | sonnet | Runs tests; correctness, edge cases, conventions | `round-N/review-code.md` |
+| [`review-code`](.claude/agents/review-code.md) | sonnet | Runs tests; reviews on two axes: spec (missing, wrong, or extra behavior; weak tests) and standards (repo rules plus a code-smell baseline) | `round-N/review-code.md` |
 | [`review-ux`](.claude/agents/review-ux.md) | sonnet | Flows, errors, empty states, accessibility | `round-N/review-ux.md` |
 | [`review-ui`](.claude/agents/review-ui.md) | sonnet | Layout, spacing, type, contrast, responsiveness | `round-N/review-ui.md` |
 | [`approver`](.claude/agents/approver.md) | opus | Final ship / escalate decision | `decision.md` |

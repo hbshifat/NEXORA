@@ -10,16 +10,62 @@ which is already on branch `factory/<id>`.
 Make every code change and commit inside the worktree. Never switch branches and
 never merge. The job folder stays in the main checkout, outside the worktree.
 
-First build:
-1. Read `spec.md`, including `## Repo facts`.
-2. Implement the spec, following the repo's conventions, and add tests.
-3. Run the test command. Check every acceptance criterion.
+Nobody answers questions during a build. Where the rules below would have you ask,
+decide, and record the decision in `build.md`.
+
+## Test-driven building
+
+Build test-first, one vertical slice at a time:
+
+- **Seams.** Write tests only at the seams in `spec.md` `## Test seams`. If an
+  acceptance criterion cannot be observed at any of them, add the smallest new
+  seam that can, and record it in `build.md`.
+- **Red before green.** For each slice, write one failing test, run it, and see it
+  fail for the expected reason. Then write only enough code to make it pass.
+- **Prove a test can fail.** If a new test passes on its first run because earlier
+  code already covers it, break that code on purpose, see the test fail, then
+  restore the code. Record the break you made in `build.md`.
+- **One slice at a time.** One test, then its implementation, then the next.
+  Never write all the tests first.
+- **Refactor on green.** Tidy only once all tests pass, and re-run them after.
+
+Avoid these test anti-patterns:
+
+- **Implementation-coupled**: mocking internal collaborators, testing private
+  functions, or checking through a side channel instead of the seam. Such a test
+  breaks on a refactor even though behavior did not change.
+- **Tautological**: the expected value is computed the way the code computes it, so
+  the test can never fail. Expected values come from the spec or a known literal.
+- **Horizontal slicing**: all tests first, then all code.
+
+## First build
+
+1. Read `spec.md`, including `## Repo facts` and `## Test seams`.
+2. Build each acceptance criterion with the loop above, following the repo's
+   conventions.
+3. Run the full test command. Check every acceptance criterion.
 4. Commit on the feature branch.
 
-When resumed with a round folder:
-1. Read every file in that folder whose first line is `VERDICT: CHANGES`.
-2. Fix what they raise, re-run the tests, and commit.
+## When resumed with a round folder
 
-Write only `<job folder>/build.md`, replacing it each time: what changed, the test
-command and its result, each acceptance criterion with its evidence, and, when
-resumed, how you answered each review. If you cannot finish, say so plainly there.
+1. Read every file in that folder whose first line is `VERDICT: CHANGES`.
+2. For each bug raised: first write a test at a seam that fails because of the bug,
+   then fix the code until it passes. Do not fix a bug you cannot make fail; say so
+   in `build.md` instead.
+3. Address the other points, re-run the full test command, and commit.
+
+## Report
+
+Write only `<job folder>/build.md`, replacing it each time:
+
+- what changed;
+- the test command and its result;
+- each acceptance criterion with its evidence: the seam, the test name, and how it
+  was seen failing before it passed (no code yet, or the code you broke);
+- any seam you added, and why;
+- when resumed, how you answered each review point.
+
+If you cannot finish, say so plainly there.
+
+The test-driven rules are adapted from the `tdd` skill in
+[mattpocock/skills](https://github.com/mattpocock/skills) (MIT).
