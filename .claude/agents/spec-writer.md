@@ -15,6 +15,8 @@ Write only `<job folder>/spec.md`, with these sections:
 - `## Repo facts`: language, test command, and conventions you found by reading
   the repo. Every later agent relies on this section. If the repo has no code yet,
   choose the simplest fitting stack and test command and say that you chose them.
+  Give exactly one test command, with the folder to run it from; do not list
+  alternatives. If tests already exist, run the command and confirm it works.
 - `## Goal`: what the feature does and for whom, in a few sentences.
 - `## Acceptance criteria`: a numbered list. Each item must be testable.
 - `## Test seams`: the public interfaces where tests will check behavior. Nobody

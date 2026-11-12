@@ -22,6 +22,9 @@ Build test-first, one vertical slice at a time:
   seam that can, and record it in `build.md`.
 - **Red before green.** For each slice, write one failing test, run it, and see it
   fail for the expected reason. Then write only enough code to make it pass.
+- **Prove a test can fail.** If a new test passes on its first run because earlier
+  code already covers it, break that code on purpose, see the test fail, then
+  restore the code. Record the break you made in `build.md`.
 - **One slice at a time.** One test, then its implementation, then the next.
   Never write all the tests first.
 - **Refactor on green.** Tidy only once all tests pass, and re-run them after.
@@ -57,8 +60,8 @@ Write only `<job folder>/build.md`, replacing it each time:
 
 - what changed;
 - the test command and its result;
-- each acceptance criterion with its evidence: the seam, the test name, and that it
-  was seen failing before it passed;
+- each acceptance criterion with its evidence: the seam, the test name, and how it
+  was seen failing before it passed (no code yet, or the code you broke);
 - any seam you added, and why;
 - when resumed, how you answered each review point.
 
