@@ -24,6 +24,8 @@ feature ─► spec-writer ─► builder ─► 4 reviews ─► approver ─�
 - [Branching and releases](#branching-and-releases)
 - [Customizing the factory](#customizing-the-factory)
 - [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Install into your project
 
@@ -289,3 +291,13 @@ the dashboard so its chip shows up.
 | Job is in `needs-human` | Read `note` on the board and `decision.md` / the latest round. Then `/factory approve <id>` to ship or `/factory rework <id> <note>` to send it back. |
 | Builder can't be resumed in a new session | Expected — the factory starts a fresh builder with the same name and paths; all context is in the job folder. |
 | `git worktree add` fails for a job | A stale worktree or branch exists. Run `git worktree prune` and check `git branch --list 'factory/*'`. |
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first: pull requests branch off `dev` and
+target `dev`, and installer changes need `bash tests/test-install.sh` to pass.
+
+## License
+
+[MIT](LICENSE)

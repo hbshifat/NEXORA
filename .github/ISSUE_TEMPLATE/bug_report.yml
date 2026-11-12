@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in the factory or installer doesn't work as described
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Ran the installer in a fresh repo
+        2. Ran /factory Add a hello.txt file
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Installer (get.sh / install.sh)
+        - Factory loop (/factory)
+        - An agent (spec, build, review, approve)
+        - Dashboard
+        - Docs
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Factory version
+      description: The "version" in factory/.install.json, or the tag you installed.
+      placeholder: v0.2.0
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, bash version (bash --version), Claude Code version, and the relevant board.json entry or job files if any.
