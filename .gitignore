@@ -6,12 +6,4 @@ factory/jobs/
 # One git worktree per in-flight job.
 .worktrees/
 
-# Gradle backend build output.
-backend/build/
-backend/.gradle/
-
-# Node frontend dependencies and build output.
-frontend/node_modules/
-frontend/dist/
-
 .DS_Store
